@@ -121,7 +121,7 @@ if uploaded_file:
     # -----------------------------
     # Display results
     # -----------------------------
-    st.write("### 📊 Year-wise & Total Affiliation Counts")
+    st.write("### 📊 Year-wise & Dept. wise Total Affiliation Counts")
     st.dataframe(combined)
 
     # -----------------------------
@@ -145,12 +145,12 @@ if uploaded_file:
     # -----------------------------
     nitk_only = df[df["NITK_Affiliation"].notna()]
 
-    st.write("### 🧹 NITK-only Publications")
+    st.write("### 🧹 NITK-Dept Publications")
     st.dataframe(nitk_only.head())
 
     st.download_button(
-        label="⬇️ Download NITK-only Publications",
+        label="⬇️ Download NITK-rev Publications",
         data=to_excel(nitk_only),
-        file_name="NITK_only_publications.xlsx",
+        file_name="NITK_rev_publications.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
