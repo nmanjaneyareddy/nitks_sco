@@ -15,14 +15,24 @@ The app will extract NITK affiliations and generate year-wise statistics.
 # -----------------------------
 # Upload file
 # -----------------------------
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+uploaded_file = st.file_uploader(
+    "Upload Excel or CSV File",
+    type=["xlsx", "csv"]
+)
+
 
 if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+    file_name = uploaded_file.name.lower()
+
+    if file_name.endswith(".csv"):
+        df = pd.read_csv(uploaded_file)
+    else:
+        df = pd.read_excel(uploaded_file)
 
     st.success("File uploaded successfully!")
     st.write("### Dataset Preview")
     st.dataframe(df.head())
+
 
     # -----------------------------
     # Column selection
