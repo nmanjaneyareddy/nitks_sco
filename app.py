@@ -14,7 +14,7 @@ st.set_page_config(
 st.title("📚 NITK Publication Affiliation Analyzer")
 st.markdown(
     "Upload **Excel (.xls / .xlsx) or CSV** files to extract "
-    "**NITK affiliations** and generate **year-wise statistics**."
+    "**NITK affiliations** with **publication count and total citations**."
 )
 
 # -------------------------------------------------
@@ -51,6 +51,7 @@ if uploaded_file:
 
     affiliations_col = st.selectbox("Affiliations column", df.columns)
     year_column = st.selectbox("Year column", df.columns)
+    cited_by_column = st.selectbox("Cited by column", df.columns)
 
     # -------------------------------------------------
     # Extract NITK affiliation
@@ -83,6 +84,17 @@ if uploaded_file:
     )
 
     # -------------------------------------------------
+    # Clean Cited by column
+    # -------------------------------------------------
+    df[cited_by_column] = (
+        df[cited_by_column]
+        .astype(str)
+        .str.extract(r"(\d+)")[0]
+        .fillna(0)
+        .astype(int)
+    )
+
+    # -------------------------------------------------
     # Affiliation category
     # -------------------------------------------------
     def label_affiliation(row):
@@ -98,33 +110,43 @@ if uploaded_file:
     )
 
     # -------------------------------------------------
-    # Year-wise & Total affiliation counts
+    # Year-wise affiliation counts + citation sum
     # -------------------------------------------------
-    yearwise_counts = (
+    yearwise_stats = (
         df.groupby([year_column, "Affiliation_Category"])
-        .size()
-        .reset_index(name="Count")
+        .agg(
+            Count=("Affiliation_Category", "size"),
+            Total_Cited_By=(cited_by_column, "sum"),
+        )
+        .reset_index()
         .sort_values(
             by=[year_column, "Count"],
             ascending=[True, False]
         )
     )
 
-    total_counts = (
+    # -------------------------------------------------
+    # Total (all years)
+    # -------------------------------------------------
+    total_stats = (
         df.groupby("Affiliation_Category")
-        .size()
-        .reset_index(name="Count")
+        .agg(
+            Count=("Affiliation_Category", "size"),
+            Total_Cited_By=(cited_by_column, "sum"),
+        )
+        .reset_index()
         .sort_values(by="Count", ascending=False)
     )
-    total_counts.insert(0, year_column, "Total")
 
-    combined_counts = pd.concat(
-        [yearwise_counts, total_counts],
+    total_stats.insert(0, year_column, "Total")
+
+    combined_stats = pd.concat(
+        [yearwise_stats, total_stats],
         ignore_index=True
     )
 
-    st.write("## 📊 Year-wise & Total Affiliation Counts")
-    st.dataframe(combined_counts)
+    st.write("## 📊 Year-wise & Total Affiliation Statistics")
+    st.dataframe(combined_stats)
 
     # -------------------------------------------------
     # NITK-only publications
@@ -149,9 +171,9 @@ if uploaded_file:
     st.write("## ⬇️ Download Reports")
 
     st.download_button(
-        "Download Affiliation Counts",
-        data=to_excel(combined_counts),
-        file_name="NITK_Affiliation_Counts.xlsx",
+        "Download Affiliation Statistics",
+        data=to_excel(combined_stats),
+        file_name="NITK_Affiliation_Counts_with_Citations.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
