@@ -4,17 +4,17 @@ import re
 from io import BytesIO
 
 # -------------------------------------------------
-# Page config
+# Page configuration
 # -------------------------------------------------
 st.set_page_config(
-    page_title="NITK Publication & Citation Analyzer",
+    page_title="NITK Publication Affiliation Analyzer",
     layout="wide"
 )
 
-st.title("📚 NITK Publication & Citation Analyzer")
+st.title("📚 NITK Publication Affiliation Analyzer")
 st.markdown(
-    "Upload **Excel (.xls/.xlsx) or CSV** files to analyze NITK affiliations "
-    "and **department-wise citation counts (Cited by)**."
+    "Upload **Excel (.xls / .xlsx) or CSV** files to extract "
+    "**NITK affiliations** and generate **year-wise statistics**."
 )
 
 # -------------------------------------------------
@@ -51,8 +51,6 @@ if uploaded_file:
 
     affiliations_col = st.selectbox("Affiliations column", df.columns)
     year_column = st.selectbox("Year column", df.columns)
-    dept_column = st.selectbox("Department column", df.columns)
-    cited_by_column = st.selectbox("Cited by column", df.columns)
 
     # -------------------------------------------------
     # Extract NITK affiliation
@@ -95,73 +93,38 @@ if uploaded_file:
         else:
             return "No NITK Mention"
 
-    df["Affiliation_Category"] = df.apply(label_affiliation, axis=1)
+    df["Affiliation_Category"] = df.apply(
+        label_affiliation, axis=1
+    )
 
     # -------------------------------------------------
     # Year-wise & Total affiliation counts
     # -------------------------------------------------
-    yearwise_affiliation = (
+    yearwise_counts = (
         df.groupby([year_column, "Affiliation_Category"])
         .size()
         .reset_index(name="Count")
-        .sort_values(by=[year_column, "Count"], ascending=[True, False])
+        .sort_values(
+            by=[year_column, "Count"],
+            ascending=[True, False]
+        )
     )
 
-    total_affiliation = (
+    total_counts = (
         df.groupby("Affiliation_Category")
         .size()
         .reset_index(name="Count")
         .sort_values(by="Count", ascending=False)
     )
-    total_affiliation.insert(0, year_column, "Total")
+    total_counts.insert(0, year_column, "Total")
 
-    affiliation_combined = pd.concat(
-        [yearwise_affiliation, total_affiliation],
-        ignore_index=True,
+    combined_counts = pd.concat(
+        [yearwise_counts, total_counts],
+        ignore_index=True
     )
 
     st.write("## 📊 Year-wise & Total Affiliation Counts")
-    st.dataframe(affiliation_combined)
-
-    # -------------------------------------------------
-    # Clean Cited by column
-    # -------------------------------------------------
-    df[cited_by_column] = (
-        df[cited_by_column]
-        .astype(str)
-        .str.extract(r"(\d+)")[0]
-        .fillna(0)
-        .astype(int)
-    )
-
-    # -------------------------------------------------
-    # Department-wise citation counts
-    # -------------------------------------------------
-    dept_citations = (
-        df.groupby(dept_column)[cited_by_column]
-        .sum()
-        .reset_index(name="Total_Cited_By")
-        .sort_values(by="Total_Cited_By", ascending=False)
-    )
-
-    st.write("## 🧮 Department-wise Total Citations (Cited by)")
-    st.dataframe(dept_citations)
-
-    # -------------------------------------------------
-    # Year × Department citation counts
-    # -------------------------------------------------
-    year_dept_citations = (
-        df.groupby([year_column, dept_column])[cited_by_column]
-        .sum()
-        .reset_index(name="Total_Cited_By")
-        .sort_values(
-            by=[year_column, "Total_Cited_By"],
-            ascending=[True, False],
-        )
-    )
-
-    st.write("## 📈 Year-wise Department Citation Counts")
-    st.dataframe(year_dept_citations)
+    st.dataframe(combined_counts)
 
     # -------------------------------------------------
     # NITK-only publications
@@ -187,22 +150,8 @@ if uploaded_file:
 
     st.download_button(
         "Download Affiliation Counts",
-        data=to_excel(affiliation_combined),
+        data=to_excel(combined_counts),
         file_name="NITK_Affiliation_Counts.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-    st.download_button(
-        "Download Department-wise Citations",
-        data=to_excel(dept_citations),
-        file_name="Department_CitedBy_Total.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-    st.download_button(
-        "Download Year-wise Department Citations",
-        data=to_excel(year_dept_citations),
-        file_name="Yearwise_Department_CitedBy.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
