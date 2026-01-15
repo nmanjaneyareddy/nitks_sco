@@ -153,7 +153,7 @@ if uploaded_file:
     # -------------------------------------------------
     nitk_only = df[df["NITK_Affiliation"].notna()]
 
-    st.write("## 🧹 NITK-only Publications")
+    st.write("## 🧹 NITK-Dept-wise Publications")
     st.dataframe(nitk_only.head())
 
     # -------------------------------------------------
@@ -178,8 +178,8 @@ if uploaded_file:
     )
 
     st.download_button(
-        "Download NITK-only Publications",
+        "Download NITK-Dept-wise Publications",
         data=to_excel(nitk_only),
-        file_name="NITK_Only_Publications.xlsx",
+        file_name="NITK_Dept-wise_Publications.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
